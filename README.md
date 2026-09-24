@@ -126,13 +126,30 @@ gitev 走第三条路：**用 git 仓库做记忆的唯一事实源，用一个�
 
 | 能力 | v0.1 | 后续 |
 | --- | --- | --- |
-| 判断层后端 | Jev（云端 API） | Kev-4B（本地） |
+| 判断层后端 | Jev（云端 API） | **Laya-421M（本地首选）** / Kev-4B（备选） |
 | hook 抽取 / 注入 | ✅ | —— |
 | git 存储 | ✅ | —— |
 | 状态机 | ✅ | —— |
 | 召回（粗召回 + 精排） | ✅ | —— |
 | 整理层（`/dream`） | 可后置 | —— |
 | 微调校准 | ❌ | 本地模型阶段再做 |
+
+### 后端选型：为什么本地首选是 Laya 而不是 Kev
+
+| 后端 | 零样本可用性 | 部署门槛 | 定位 |
+| --- | --- | --- | --- |
+| **Jev**（云端，闭源） | ✅ 可直接用 | 只需 API key | v0.1 使用 |
+| **Laya-421M**（本地，Apache-2.0） | ❌ 必须微调 | **约 1GB 内存，CPU 可跑** | **本地首选** |
+| **Kev-4B**（本地，Apache-2.0） | ⚠️ 相对可用 | 32GB Mac 或 GPU | 本地备选 |
+
+Laya 是 [NandhaKishorM/laya](https://github.com/NandhaKishorM/laya)（Convai Innovations，2026-09-18 开源，21k★），用 ModernBERT 双向编码器而非 decoder，参数小约 10 倍（421M vs 4B），标称延迟低一个数量级（38ms vs 721ms，注意两者测量硬件不同）。但要说清两件事：
+
+- **延迟优势对我们的场景其实有限**——写入判断每次会话一次、巡检是离线的，都对延迟不敏感。它真正的价值在**部署门槛**（1GB vs 32GB，决定了能不能"装完就用"）和**解锁更高频的判断**。
+- **"零样本不可用"不是否决理由**——官方自己写明它是 "a fast base to specialise, not a zero-shot decision engine"，但 **Kev 同样需要微调**。所以真正该问的是：*在"记忆判断"这个具体任务上，微调后的 Laya 和 Kev 谁更好？*
+
+**这个问题的答案只能靠评测回答。** 所以路线是：v0.1 用 Jev 跑通链路并建立评测集 → 用同一套评测集分别微调 Laya 和 Kev → 谁好用谁。
+
+⚠️ 接入任何本地后端前有个前置动作：**先把 `confidence` 的语义统一**。不同原语的定义不一致（`choice` 用熵、`noul` 用 `max(p,1−p)`，同一个"一边 0.9 的二选一"能报出 0.53 和 0.90 两个值），不统一的话整个阈值体系会自相矛盾。详见 [docs/research.md](docs/research.md) §6.5。
 
 ---
 
@@ -154,7 +171,7 @@ gitev 走第三条路：**用 git 仓库做记忆的唯一事实源，用一个�
 | --- | --- | --- |
 | **候选顺序会改变判断结果** | 同样的证据放在选项首位 vs 末位，正确率差别很大；反转选项顺序能让分类概率从 0.84–0.89 跳到 0.93–0.96 | 精排要做位置校准，部署前跑排列测试 |
 | **候选数量会改变判断结果** | 加入一个无关选项后，已有选项的对数 odds 从 +0.38 掉到 +0.11（10 组实验全部下降） | 每次精排固定候选条数 |
-| **`confidence` 字段不是正确率** | 它只是概率分布集中度的算术摘要，分布集中也可以是 confidently wrong | 阈值必须在自己数据上实测 |
+| **`confidence` 字段不是正确率** | 它只是概率分布集中度的算术摘要，分布集中也可以是 confidently wrong。**更麻烦的是不同原语之间定义还不一致**（`choice` 用熵、`noul` 用 `max(p,1−p)`，同一个判断能报出 0.53 和 0.90 两个值） | 接入任何后端前先统一语义；阈值必须在自己数据上实测 |
 | **长输入精度衰减** | 训练只覆盖短序列；输入变长后准确率显著下降 | 靠上游粗召回把候选集压小，别把全文塞进去 |
 | **模型别名会漂移** | `jev-latest` 指向的版本会变，已校准的阈值随之失准 | pin 具体版本号 |
 
@@ -169,7 +186,7 @@ gitev 走第三条路：**用 git 仓库做记忆的唯一事实源，用一个�
 - [ ] **v0.1 步骤 4 · 状态机**：frontmatter 状态字段 + 转移逻辑 + staging 人工关卡
 - [ ] **v0.1 步骤 5 · 召回**：粗召回 + Jev 精排（固定候选数 + 位置校准）
 - [ ] **v0.1 步骤 6 · 整理层**：`/dream` 入口 + 四道门 + 四阶段
-- [ ] 后续：接入本地 Kev-4B，做领域微调 + 阈值重新校准
+- [ ] 后续：接入本地后端（**Laya-421M 首选 / Kev-4B 备选**），用自建评测集做领域微调 + 阈值重新校准
 
 ---
 
@@ -183,7 +200,8 @@ gitev 走第三条路：**用 git 仓库做记忆的唯一事实源，用一个�
 | [fonlan/gitmemo](https://github.com/fonlan/gitmemo) | `.mem` git 仓库结构、entry frontmatter 格式、CJK 写入避坑 |
 | [xChuCx/agent-memory](https://github.com/xChuCx/agent-memory) | `stage → review → apply` 人工关卡 |
 | Claude Code Auto-Dream | 离线整理的"四道门 + 四阶段"、三层记忆层级、安全约束 |
-| [jaredpalmer/kev](https://github.com/jaredpalmer/kev) | 开源决策模型实现，后续本地后端 |
+| [NandhaKishorM/laya](https://github.com/NandhaKishorM/laya) | 开源决策模型（ModernBERT 双向编码器，421M），**本地后端首选** |
+| [jaredpalmer/kev](https://github.com/jaredpalmer/kev) | 开源决策模型（Qwen3.5 + LoRA，0.8B/4B/9B），本地后端备选 |
 
 ---
 
