@@ -170,7 +170,8 @@ Laya 是 [NandhaKishorM/laya](https://github.com/NandhaKishorM/laya)（Convai In
 | 文档 | 内容 |
 | --- | --- |
 | [docs/design.md](docs/design.md) | 完整架构设计：四层结构、判断层分工、状态机、抽取 prompt 设计、召回、整理层、存储结构、实施路线 |
-| [先导原型设计](docs/superpowers/specs/2026-09-28-pilot-core-cli-design.md) | 已分段确认、待整体审阅：独立核心库 + CLI，编程与生活双场景，事件/记忆/提案模型及先导验收 |
+| [先导原型设计](docs/superpowers/specs/2026-09-28-pilot-core-cli-design.md) | 已确认：独立核心库 + CLI，双场景维护；用户提供 LLM 与 Jev，LLM 首版使用 Responses API |
+| [先导实施路线](docs/superpowers/plans/2026-10-04-pilot-core-cli.md) | 六阶段依赖与验收、文件职责、模型配置和 CLI 约定；第一阶段的场景与契约任务已细化 |
 | [docs/evaluation.md](docs/evaluation.md) | 评测方案：维护语义、两份标注集及派生测试、对照实验、风险与覆盖率、复现要求 |
 | [docs/delivery-estimate.md](docs/delivery-estimate.md) | 从零到 arXiv 技术报告：范围、七个工作包、工期、先导验证和论文交付 |
 | [docs/research.md](docs/research.md) | 调研材料：决策模型的架构与**实测失效模式**、相关论文、开源生态现状、git 记忆实现对比 |
