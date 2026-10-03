@@ -1,11 +1,13 @@
 # gitev · 架构设计 v0.3
 
 > 2026-09-24 ｜ 基于 memoir claude-code 插件源码 + Claude Code Auto-Dream 公开设计 + Jev / Laya / Kev 能力边界
-> 目标：可用的 MVP —— 装一个插件，填 Jev key + git 仓库链接，即可运行
+> 产品目标：宿主 Agent 插件复用宿主 LLM，额外配置 Jev key 与 Git 仓库。当前先导采用独立核心库 + CLI，自然语言抽取需另配通用 LLM。
 
 > 2026-09-28 修订：维护语义与 [评测方案](evaluation.md) 对齐。本文保留完整产品方向；首篇研究报告先完成单仓库原型，完整插件、自动整理与 Laya / Kev 微调后置，范围和工期见 [交付计划](delivery-estimate.md)。既有判断日志与本地后端路线继续保留。
 
 先导阶段的独立核心库 + CLI、编程/生活场景、数据模型和失败语义见 [先导原型设计](superpowers/specs/2026-09-28-pilot-core-cli-design.md)。
+
+2026-10-04 已确认：用户提供 LLM 与 Jev；独立 CLI 的通用 LLM 首版只支持 OpenAI Responses API，可配置 `base_url`、`model` 与 API Key。Jev 使用独立接口。仅输入结构化事件的 Jev 维护轨道可不配置通用 LLM；自然语言摄入及 LLM 对照评测需要配置。
 
 ## 术语说明：判断层与后端是解耦的
 
